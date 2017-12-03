@@ -21,7 +21,7 @@ fetchint(uint addr, int *ip)
 
   //if(addr >= curproc->sz || addr+4 > curproc->sz)
     //return -1;
-  if(addr >= KERNBASE - 1 || addr+4 > KERNBASE - 1) 
+  if(addr >= KERNBASE || addr+4 > KERNBASE) 
     return -1; 
   *ip = *(int*)(addr);
   return 0;
@@ -54,6 +54,7 @@ int
 argint(int n, int *ip)
 {
   return fetchint((myproc()->tf->esp) + 4 + 4*n, ip);
+  //return fetchint((myproc()->tf->esp), ip); 
 }
 
 // Fetch the nth word-sized system call argument as a pointer
