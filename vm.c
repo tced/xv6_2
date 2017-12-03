@@ -226,8 +226,8 @@ allocuvm(pde_t *pgdir, uint oldsz, uint newsz)
 
   if(newsz >= KERNBASE)
     return 0;
-  if(newsz < oldsz)
-    return oldsz;
+  ///if(newsz < oldsz)  
+    //return oldsz;
 
   a = PGROUNDUP(oldsz);
   for(; a < newsz; a += PGSIZE){
