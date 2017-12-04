@@ -9,7 +9,6 @@
 
 extern char data[];  // defined by kernel.ld
 pde_t *kpgdir;  // for use in scheduler()
-
 // Set up CPU's kernel segment descriptors.
 // Run once on entry on each CPU.
 void
@@ -317,9 +316,10 @@ copyuvm(pde_t *pgdir, uint sz)
 {
   pde_t *d;
   pte_t *pte;
-  uint pa, i, j, flags;
+  uint pa, i, j, flags/*,stk_pgs*/;
   char *mem;
-
+  
+  //stk_pgs = myproc()->stk_pgs; 
   if((d = setupkvm()) == 0)
     return 0;
   for(i = 0; i < sz; i += PGSIZE){
@@ -336,17 +336,17 @@ copyuvm(pde_t *pgdir, uint sz)
       	   goto bad;
   }
   //points physical address to virtual address 
-  for(j = KERNBASE - 1; j < myproc()->stk_pgs; --j) {
-    if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
-      panic("copyuvm: pte should exist");
+  for(j = KERNBASE - 1 - PGSIZE; j < KERNBASE - 1; j+= PGSIZE) {
+    if((pte = walkpgdir(pgdir, (void *) j, 0)) == 0)
+      panic("second for loopcopyuvm: pte should exist");
     if(!(*pte & PTE_P))
-      panic("copyuvm: page not present");
+      panic("second for loopcopyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
     goto bad;
     memmove(mem, (char*)P2V(pa), PGSIZE);
-   if(mappages(d, (void*)i, PGSIZE, V2P(mem), flags) < 0)
+   if(mappages(d, (void*)j, PGSIZE, V2P(mem), flags) < 0)
       	   goto bad;
   }
   return d;
