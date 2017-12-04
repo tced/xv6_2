@@ -55,6 +55,7 @@ int
 argint(int n, int *ip)
 {
   return fetchint((myproc()->tf->esp) + 4 + 4*n, ip);
+  //return fetchint((myproc()->tf->esp), ip); 
 }
 
 // Fetch the nth word-sized system call argument as a pointer
