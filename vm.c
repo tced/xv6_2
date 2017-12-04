@@ -316,17 +316,18 @@ copyuvm(pde_t *pgdir, uint sz)
 {
   pde_t *d;
   pte_t *pte;
-  uint pa, i, j, flags/*,stk_pgs*/;
+  uint pa, i, j, flags,stk_pgs;
   char *mem;
   
-  //stk_pgs = myproc()->stk_pgs; 
+  stk_pgs = myproc()->stk_pgs; 
   if((d = setupkvm()) == 0)
     return 0;
   for(i = 0; i < sz; i += PGSIZE){
+    cprintf("first for loop, sz:%d\n", sz); 
     if((pte = walkpgdir(pgdir, (void *) i, 0)) == 0)
       panic("copyuvm: pte should exist");
     if(!(*pte & PTE_P))
-      panic("copyuvm: page not present");
+      panic("this is the first for loop, copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
@@ -336,11 +337,12 @@ copyuvm(pde_t *pgdir, uint sz)
       	   goto bad;
   }
   //points physical address to virtual address 
-  for(j = KERNBASE - 1 - PGSIZE; j < KERNBASE - 1; j+= PGSIZE) {
+  for(j = stk_pgs; j < KERNBASE - 1; j+= PGSIZE) {
+    cprintf("went inside 2nd for loop, stk_pgs:%d\n", stk_pgs); 
     if((pte = walkpgdir(pgdir, (void *) j, 0)) == 0)
-      panic("second for loopcopyuvm: pte should exist");
+      panic("second for loop,copyuvm: pte should exist");
     if(!(*pte & PTE_P))
-      panic("second for loopcopyuvm: page not present");
+      panic("second for loop, copyuvm: page not present");
     pa = PTE_ADDR(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)

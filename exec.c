@@ -12,7 +12,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint argc, sz, sp, ustack[3+MAXARG+1] /*, stk_pgs*/;
+  uint argc, sz, sp, ustack[3+MAXARG+1], stk_pgs, alloc_pgs;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -60,29 +60,21 @@ exec(char *path, char **argv)
   end_op();
   ip = 0;
   
-  ///stk_pgs = 1; 
+  stk_pgs = 1; 
   // Allocate two pages at the next page boundary.
   // Make the first inaccessible.  Use the second as the user stack.
-  sz = PGROUNDUP(KERNBASE);
-  cprintf("able to use PGROUNDUP"); 
+  sz = PGROUNDUP(sz);
+  cprintf("went through pgroundup\n"); 
   //if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
-  if ((stk_pgs = allocuvm(pgdir, (sz-1) - PGSIZE, sz - 1)) ==0)  
-    goto bad;
+  if ((alloc_pgs = allocuvm(pgdir, (KERNBASE-1) - PGSIZE, (KERNBASE - 1))) ==0)            
+     goto bad;
+  cprintf("sz after allocuvm:%d\n PGSIZE:%d\n", sz, PGSIZE);
+  cprintf("alloc_pgs:%d\n", alloc_pgs);  
   //stk_pgs = sz; 
-  stk_pgs = KERNBASE - 1 - PGSIZE; 
   //clearpteu(pgdir, (char*)((sz-1) - 2*PGSIZE));
   sp = KERNBASE - 1;
-  //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
-  sz = PGROUNDUP(V2P(KERNBASE));
-  cprintf("able to use PGROUNDUP"); 
-  //if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
-  if ((sz = allocuvm(pgdir, sz-1, sz - 1*PGSIZE)) ==0)  
-    goto bad;
-    cprintf("allocuvm went to bad\n");
-  cprintf("able to use allocuvm"); 
-  //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
-  sp = KERNBASE - 1;
-  //stk_pgs = sz;
+  stk_pgs = KERNBASE - 1 - PGSIZE;
+  cprintf("this is stk_pgs after assigning it the bottom of the stack:%d\n", stk_pgs); 
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
@@ -112,10 +104,10 @@ exec(char *path, char **argv)
   // Commit to the user image.
   oldpgdir = curproc->pgdir;
   curproc->pgdir = pgdir;
-  //curproc->sz = sz;
+  curproc->sz = sz;
   curproc->tf->eip = elf.entry;  // main
   curproc->tf->esp = sp;
-  curproc->stk_pgs = sz;
+  curproc->stk_pgs = stk_pgs;
   switchuvm(curproc);
   freevm(oldpgdir);
   return 0;
