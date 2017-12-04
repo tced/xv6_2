@@ -12,7 +12,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off;
-  uint argc, sz, sp, ustack[3+MAXARG+1], stk_pgs;
+  uint argc, sz, sp, ustack[3+MAXARG+1] /*, stk_pgs*/;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -73,6 +73,16 @@ exec(char *path, char **argv)
   //clearpteu(pgdir, (char*)((sz-1) - 2*PGSIZE));
   sp = KERNBASE - 1;
   //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
+  sz = PGROUNDUP(V2P(KERNBASE));
+  cprintf("able to use PGROUNDUP"); 
+  //if((sz = allocuvm(pgdir, sz, sz + 2*PGSIZE)) == 0)
+  if ((sz = allocuvm(pgdir, sz-1, sz - 1*PGSIZE)) ==0)  
+    goto bad;
+    cprintf("allocuvm went to bad\n");
+  cprintf("able to use allocuvm"); 
+  //clearpteu(pgdir, (char*)(sz - 2*PGSIZE));
+  sp = KERNBASE - 1;
+  //stk_pgs = sz;
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
